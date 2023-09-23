@@ -41,7 +41,6 @@ class View {
         const svgNamespace = "http://www.w3.org/2000/svg";
         const tileSize = 50;
         const borderSize = 1;
-        const mapSVG = document.getElementById('map');
 
         island.tiles.forEach((row, i) => {
             row.forEach((tile, j) => {
@@ -60,9 +59,7 @@ class View {
 }
 
 const island = new Island(10, 10);
-//document.addEventListener("DOMContentLoaded", function() {
-    const view = new View();
-//});
+const view = new View();
 
 document.addEventListener('keydown', (event) => {
     if (event.key === ' ') {
