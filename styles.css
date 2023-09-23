@@ -33,3 +33,25 @@ svg {
     background-color: #eee; /* Just for visualization; can be omitted */
     padding: 8px;
 }
+
+#buttonPanel {
+    padding-bottom: 8px;
+    border-bottom: 1px solid lightgrey;
+    margin-bottom: 8px;
+
+    display: flex;
+    gap: 4px;
+}
+
+button {
+    font-size: 1.5rem; 
+    background-color: #f4f4f4;
+    border: 1px solid #ddd;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background-color: #e4e4e4;
+}

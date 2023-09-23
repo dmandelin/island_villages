@@ -112,12 +112,22 @@ class View {
         this.panel.appendChild(div);
     }
 }
+// ---------------------------------- MVC ----------------------------------
 const island = new Island(10, 10);
 const view = new View();
 document.addEventListener('keydown', (event) => {
     if (event.key === ' ') {
     }
 });
+document.getElementById("play")?.addEventListener("click", playVideo);
+document.getElementById("pause")?.addEventListener("click", pauseVideo);
+function playVideo() {
+    // Play your media here
+}
+function pauseVideo() {
+    // Pause your media here
+}
+// ---------------------------- Library functions ----------------------------
 function randRange(a, b) {
     return Math.floor(Math.random() * (b - a));
 }

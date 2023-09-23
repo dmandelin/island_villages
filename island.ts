@@ -123,6 +123,8 @@ class View {
     }
 }
 
+// ---------------------------------- MVC ----------------------------------
+
 const island = new Island(10, 10);
 const view = new View();
 
@@ -131,6 +133,20 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
+document.getElementById("play")?.addEventListener("click", playVideo);
+document.getElementById("pause")?.addEventListener("click", pauseVideo);
+
+function playVideo() {
+    // Play your media here
+}
+
+function pauseVideo() {
+    // Pause your media here
+}
+
+// ---------------------------- Library functions ----------------------------
+
 function randRange(a: number, b: number) {
     return Math.floor(Math.random() * (b - a))
 }
+
