@@ -17,6 +17,10 @@ class Island {
 
     get year(): number { return this.year_; }
 
+    step() {
+        ++this.year_;
+    }
+
     constructor(readonly w: number, readonly h: number) {
         this.tiles = [];
         for (let x = 0; x < w; ++x) {
@@ -74,6 +78,12 @@ class View {
     readonly panel: HTMLElement;
     readonly widgets: TextWidget[];
 
+    refresh() {
+        for (const w of this.widgets) {
+            w.refresh();
+        }
+    }
+
     constructor() {
         this.panel = document.getElementById('panel')!;
         this.widgets = [
@@ -127,12 +137,17 @@ class TextWidget {
     readonly div: HTMLDivElement;
 
     constructor(protected readonly view, 
-        protected readonly label: string, protected readonly supplier: () => number|string,
-
-        sep = ': ') {
+        protected readonly label: string, 
+        protected readonly supplier: () => number|string,
+        protected readonly sep = ': ') 
+    {
         this.div = document.createElement('div');
-        this.div.innerText = `${label}${sep}${supplier()}`;
+        this.refresh();
         view.panel.appendChild(this.div);
+    }
+
+    refresh() {
+        this.div.innerText = `${this.label}${this.sep}${this.supplier()}`;
     }
 }
 
@@ -142,7 +157,8 @@ class Controller {
     }
 
     step() {
-        console.log('step');
+        island.step();
+        view.refresh();
     }
 }
 

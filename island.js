@@ -16,6 +16,9 @@ class Island {
     village;
     year_ = 1;
     get year() { return this.year_; }
+    step() {
+        ++this.year_;
+    }
     constructor(w, h) {
         this.w = w;
         this.h = h;
@@ -69,6 +72,11 @@ class View {
     svg;
     panel;
     widgets;
+    refresh() {
+        for (const w of this.widgets) {
+            w.refresh();
+        }
+    }
     constructor() {
         this.panel = document.getElementById('panel');
         this.widgets = [
@@ -116,14 +124,19 @@ class TextWidget {
     view;
     label;
     supplier;
+    sep;
     div;
     constructor(view, label, supplier, sep = ': ') {
         this.view = view;
         this.label = label;
         this.supplier = supplier;
+        this.sep = sep;
         this.div = document.createElement('div');
-        this.div.innerText = `${label}${sep}${supplier()}`;
+        this.refresh();
         view.panel.appendChild(this.div);
+    }
+    refresh() {
+        this.div.innerText = `${this.label}${this.sep}${this.supplier()}`;
     }
 }
 class Controller {
@@ -131,7 +144,8 @@ class Controller {
         document.getElementById(elementId)?.addEventListener(event, fn);
     }
     step() {
-        console.log('step');
+        island.step();
+        view.refresh();
     }
 }
 // ---------------------------------- Setup ----------------------------------
