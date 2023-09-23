@@ -22,15 +22,18 @@ class Island {
         for (let x = 0; x < w; ++x) {
             const row = [];
             for (let y = 0; y < h; ++y) {
-                row.push(new Tile());
+                const isWater = x == 0 || x == w - 1 || y == 0 || y == h - 1;
+                row.push(new Tile(isWater));
             }
             this.tiles.push(row);
         }
     }
 }
 class Tile {
-}
-class LandTile {
+    isWater;
+    constructor(isWater) {
+        this.isWater = isWater;
+    }
 }
 class View {
     constructor() {
@@ -45,7 +48,7 @@ class View {
                 rect.setAttribute('y', String(i * tileSize));
                 rect.setAttribute('width', String(tileSize));
                 rect.setAttribute('height', String(tileSize));
-                rect.setAttribute('fill', 'blue');
+                rect.setAttribute('fill', tile.isWater ? '#AEDFF7' : '#8CB39F');
                 rect.setAttribute('stroke', 'lightgray');
                 rect.setAttribute('stroke-width', String(borderSize));
                 svg.appendChild(rect);
