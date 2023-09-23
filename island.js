@@ -60,10 +60,13 @@ class Village {
 const svgNamespace = "http://www.w3.org/2000/svg";
 class View {
     svg;
+    panel;
     constructor() {
         this.svg = document.getElementById('map');
+        this.panel = document.getElementById('panel');
         const tileSize = 50;
         const borderSize = 1;
+        let village = undefined;
         island.tiles.forEach((col, x) => {
             col.forEach((tile, y) => {
                 const rx = x * tileSize;
@@ -78,12 +81,17 @@ class View {
                 rect.setAttribute('stroke-width', String(borderSize));
                 this.svg.appendChild(rect);
                 if (tile.village) {
+                    village = tile.village;
                     this.addVillageDot(rx + 23, ry + 23);
                     this.addVillageDot(rx + 21, ry + 27);
                     this.addVillageDot(rx + 25, ry + 27);
                 }
             });
         });
+        this.addTextDiv('Year 1');
+        if (village) {
+            this.addTextDiv('Village population: ' + village.pop);
+        }
     }
     addVillageDot(x, y) {
         const rect = document.createElementNS(svgNamespace, 'rect');
@@ -93,6 +101,11 @@ class View {
         rect.setAttribute('height', '3');
         rect.setAttribute('fill', '#080808');
         this.svg.appendChild(rect);
+    }
+    addTextDiv(text) {
+        const div = document.createElement('div');
+        div.innerText = text;
+        this.panel.appendChild(div);
     }
 }
 const island = new Island(10, 10);
