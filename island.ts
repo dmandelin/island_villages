@@ -12,6 +12,10 @@
 
 class Island {
     readonly tiles: Tile[][];
+    readonly village: Village;
+    protected year_: number = 1;
+
+    get year(): number { return this.year_; }
 
     constructor(readonly w: number, readonly h: number) {
         this.tiles = [];
@@ -30,7 +34,8 @@ class Island {
             if (this.tiles[x][y].isWater) continue;
             if (this.tiles[x-1][y]?.isWater || this.tiles[x+1][y]?.isWater || 
                 this.tiles[x][y-1]?.isWater || this.tiles[x][y+1]?.isWater) {
-                this.tiles[x][y].addVillage(new Village(100));
+                this.village = new Village(100);
+                this.tiles[x][y].addVillage(this.village);
                 break;
             }
         }
@@ -65,12 +70,19 @@ const svgNamespace = "http://www.w3.org/2000/svg";
 
 class View {
     protected readonly svg: HTMLElement;
-    protected readonly panel: HTMLElement;
+    
+    readonly panel: HTMLElement;
+    readonly widgets: TextWidget[];
 
     constructor() {
-        this.svg = document.getElementById('map')!;
         this.panel = document.getElementById('panel')!;
+        this.widgets = [
+            new TextWidget(this, 'Year', () => island.year, ' '),
+            new TextWidget(this, 'Population', () => island.village.pop),
+            new TextWidget(this, 'Produce', () => island.village.produce),
+        ];
 
+        this.svg = document.getElementById('map')!;
         const tileSize = 50;
         const borderSize = 1;
 
@@ -98,12 +110,6 @@ class View {
                 }
             });
         });
-
-        this.addTextDiv('Year 1');
-        if (village) {
-            this.addTextDiv('Village population: ' + village.pop);
-            this.addTextDiv('  Produce: ' + village.produce);
-        }
     }
 
     protected addVillageDot(x: number, y: number) {
@@ -115,34 +121,45 @@ class View {
         rect.setAttribute('fill', '#080808');
         this.svg.appendChild(rect);
     }
+}
 
-    protected addTextDiv(text: string) {
-        const div = document.createElement('div');
-        div.innerText = text;
-        this.panel.appendChild(div);
+class TextWidget {
+    readonly div: HTMLDivElement;
+
+    constructor(protected readonly view, 
+        protected readonly label: string, protected readonly supplier: () => number|string,
+
+        sep = ': ') {
+        this.div = document.createElement('div');
+        this.div.innerText = `${label}${sep}${supplier()}`;
+        view.panel.appendChild(this.div);
     }
 }
 
-// ---------------------------------- MVC ----------------------------------
+class Controller {
+    bind(elementId:string, event: string, fn: () => void) {
+        document.getElementById(elementId)?.addEventListener(event, fn);
+    }
+
+    step() {
+        console.log('step');
+    }
+}
+
+// ---------------------------------- Setup ----------------------------------
 
 const island = new Island(10, 10);
 const view = new View();
+const controller = new Controller();
 
 document.addEventListener('keydown', (event) => {
-    if (event.key === ' ') {
+    switch (event.code) {
+        case 'ArrowRight':
+            controller.step();
     }
 });
 
-document.getElementById("play")?.addEventListener("click", playVideo);
-document.getElementById("pause")?.addEventListener("click", pauseVideo);
-
-function playVideo() {
-    // Play your media here
-}
-
-function pauseVideo() {
-    // Pause your media here
-}
+controller.bind('step', 'click', controller.step)
 
 // ---------------------------- Library functions ----------------------------
 
