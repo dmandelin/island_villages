@@ -1,8 +1,6 @@
 // Island villages
 //
 // General plan and feature list
-// - Island of square land tiles surrounded by square water tiles
-// - Villages appear as a dot or cluster of dots in a tile
 // - Each square has some kind of diminishing returns production capacity
 //   - May vary by terrain type or other factors
 // - Population of villages changes according to relative production
@@ -30,8 +28,8 @@ class Island {
             const x = randRange(0, w);
             const y = randRange(0, h);
             if (this.tiles[x][y].isWater) continue;
-            if (!this.tiles[x-1][y]?.isWater || this.tiles[x-1][y]?.isWater || 
-                this.tiles[x-1][y]?.isWater || this.tiles[x-1][y]?.isWater) {
+            if (this.tiles[x-1][y]?.isWater || this.tiles[x+1][y]?.isWater || 
+                this.tiles[x][y-1]?.isWater || this.tiles[x][y+1]?.isWater) {
                 this.tiles[x][y].addVillage(new Village(100));
                 break;
             }

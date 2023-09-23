@@ -10,8 +10,24 @@ h1 {
     margin-top: 20px;
 }
 
+#container {
+    display: flex;
+    align-items: stretch; /* Ensures that children stretch to the same height */
+    justify-content: center;
+    gap: 8px;
+}
+
 svg {
     display: block;
-    margin: 0 auto;
     border: 2px solid lightgrey;
+}
+
+#map {
+    flex-shrink: 0; /* Prevents the SVG from shrinking */
+}
+
+#panel {
+    width: 200px;
+    flex-shrink: 0; /* Prevents the panel from shrinking */
+    background-color: #eee; /* Just for visualization; can be omitted */
 }
