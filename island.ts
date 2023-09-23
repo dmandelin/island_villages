@@ -1,9 +1,7 @@
 // Island villages
 //
 // General plan and feature list
-// - Each square has some kind of diminishing returns production capacity
-//   - May vary by terrain type or other factors
-// - Population of villages changes according to relative production
+//   - Production may vary by terrain type or other factors
 // - If population is large, part of the village may leave to found a new village
 //   - Productivity may be lowered in a new village
 // Later
@@ -18,6 +16,7 @@ class Island {
     get year(): number { return this.year_; }
 
     step() {
+        this.village.step();
         ++this.year_;
     }
 
@@ -59,6 +58,8 @@ class Tile {
 }
 
 class Village {
+    protected lastPopChange_: number = 0;
+
     constructor(protected pop_: number) {
     }
 
@@ -66,7 +67,21 @@ class Village {
     protected set pop(pop: number) { this.pop_ = pop; }
 
     get produce(): number {
-        return Math.min(this.pop, 300);
+        return 1 * Math.min(this.pop, 300) +
+            0.1 * Math.min(this.pop, 200) +
+            0.1 * Math.min(this.pop, 100);
+    }
+
+    get popChange() { 
+        const sr = this.produce / this.pop;
+        const r = 0.1 * (sr - 1);
+        return Math.round(r * this.pop);
+    }
+
+    step() {
+        const popChange = this.popChange;
+        this.pop += popChange;
+        this.lastPopChange_ = popChange;
     }
 }
 
