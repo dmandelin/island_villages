@@ -56,6 +56,9 @@ class Village {
     }
     get pop() { return this.pop_; }
     set pop(pop) { this.pop_ = pop; }
+    get produce() {
+        return Math.min(this.pop, 300);
+    }
 }
 const svgNamespace = "http://www.w3.org/2000/svg";
 class View {
@@ -91,6 +94,7 @@ class View {
         this.addTextDiv('Year 1');
         if (village) {
             this.addTextDiv('Village population: ' + village.pop);
+            this.addTextDiv('  Produce: ' + village.produce);
         }
     }
     addVillageDot(x, y) {

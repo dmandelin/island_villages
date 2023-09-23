@@ -55,6 +55,10 @@ class Village {
 
     get pop() { return this.pop_; }
     protected set pop(pop: number) { this.pop_ = pop; }
+
+    get produce(): number {
+        return Math.min(this.pop, 300);
+    }
 }
 
 const svgNamespace = "http://www.w3.org/2000/svg";
@@ -98,6 +102,7 @@ class View {
         this.addTextDiv('Year 1');
         if (village) {
             this.addTextDiv('Village population: ' + village.pop);
+            this.addTextDiv('  Produce: ' + village.produce);
         }
     }
 
