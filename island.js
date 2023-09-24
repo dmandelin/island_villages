@@ -11,12 +11,46 @@ class Island {
     w;
     h;
     tiles;
-    village;
+    villages = [];
     year_ = 1;
     get year() { return this.year_; }
+    tile(x, y) {
+        const col = this.tiles[x];
+        return col ? col[y] : undefined;
+    }
     step() {
-        this.village.step();
+        const villages = [...this.villages];
+        for (const village of villages) {
+            village.step();
+        }
         ++this.year_;
+    }
+    moveOffsets = [
+        [-2, 0], [-1, -1], [-1, 0], [-1, 1],
+        [0, -2], [0, -1], [0, 1], [0, 2],
+        [1, -1], [1, 0], [1, 1], [2, 0],
+    ];
+    addVillage(x, y, pop) {
+        const village = new Village(x, y, pop);
+        this.villages.push(village);
+        this.tiles[x][y].addVillage(village);
+    }
+    addVillageFrom(village, newPop) {
+        // Find all sites available within 1.5 tiles.
+        const cands = [];
+        for (const [dx, dy] of this.moveOffsets) {
+            const x = village.x + dx;
+            const y = village.y + dy;
+            const tile = this.tile(x, y);
+            if (tile && !tile.isWater && !tile.village) {
+                cands.push([x, y]);
+            }
+        }
+        // Choose at random.
+        const pos = randElement(cands);
+        if (pos) {
+            this.addVillage(pos[0], pos[1], newPop);
+        }
     }
     constructor(w, h) {
         this.w = w;
@@ -37,8 +71,7 @@ class Island {
                 continue;
             if (this.tiles[x - 1][y]?.isWater || this.tiles[x + 1][y]?.isWater ||
                 this.tiles[x][y - 1]?.isWater || this.tiles[x][y + 1]?.isWater) {
-                this.village = new Village(x, y, 100);
-                this.tiles[x][y].addVillage(this.village);
+                this.addVillage(x, y, randRange(89, 127));
                 break;
             }
         }
@@ -78,6 +111,21 @@ class Village {
         return Math.round(r * this.pop);
     }
     step() {
+        this.trySplit();
+        this.stepPop();
+    }
+    trySplit() {
+        if (this.produce / this.pop < 1.05 && Math.random() < 0.1) {
+            this.split();
+        }
+    }
+    split() {
+        const newVillagersFraction = Math.random() * 0.5 + 0.1;
+        const newVillagers = Math.round(newVillagersFraction * this.pop);
+        island.addVillageFrom(this, newVillagers);
+        this.pop -= newVillagers;
+    }
+    stepPop() {
         const popChange = this.popChange;
         this.pop += popChange;
         this.lastPopChange_ = popChange;
@@ -89,17 +137,25 @@ class View {
     svg;
     panel;
     widgets;
+    villageWidgets = [];
     refresh() {
         for (const w of this.widgets) {
+            w.refresh();
+        }
+        if (this.villageWidgets.length < island.villages.length) {
+            for (let i = this.villageWidgets.length; i < island.villages.length; ++i) {
+                this.villageWidgets.push(new VillageWidget(this.svg, island.villages[i]));
+            }
+        }
+        for (const w of this.villageWidgets) {
             w.refresh();
         }
     }
     constructor() {
         this.panel = document.getElementById('panel');
         this.widgets = [
-            new TextWidget(this, 'Year', () => island.year, ' '),
-            new TextWidget(this, 'Population', () => island.village.pop),
-            new TextWidget(this, 'Produce', () => island.village.produce),
+            new TextWidget(this.panel, 'Year', () => island.year, ' '),
+            new VillageListWidget(this.panel),
         ];
         this.svg = document.getElementById('map');
         const borderSize = 1;
@@ -119,30 +175,49 @@ class View {
                 this.svg.appendChild(rect);
             });
         });
-        this.widgets.push(new VillageWidget(this, this.svg, island.village));
+        this.refresh();
+    }
+}
+class VillageListWidget {
+    panel;
+    widgets = [];
+    length = 0;
+    constructor(panel) {
+        this.panel = panel;
+        this.refresh();
+    }
+    refresh() {
+        for (let i = this.length; i < island.villages.length; ++i) {
+            const village = island.villages[i];
+            addH3(this.panel, `Village ${i + 1}`);
+            this.widgets.push(new TextWidget(this.panel, 'Population', () => village.pop), new TextWidget(this.panel, 'Produce', () => Math.floor(village.produce)), new TextWidget(this.panel, 'Ratio', () => (village.produce / village.pop).toFixed(2)));
+            ++this.length;
+        }
+        for (const widget of this.widgets) {
+            widget.refresh();
+        }
     }
 }
 class TextWidget {
-    view;
+    panel;
     label;
     supplier;
     sep;
     div;
-    constructor(view, label, supplier, sep = ': ') {
-        this.view = view;
+    constructor(panel, label, supplier, sep = ': ') {
+        this.panel = panel;
         this.label = label;
         this.supplier = supplier;
         this.sep = sep;
         this.div = document.createElement('div');
         this.refresh();
-        view.panel.appendChild(this.div);
+        panel.appendChild(this.div);
     }
     refresh() {
         this.div.innerText = `${this.label}${this.sep}${this.supplier()}`;
     }
 }
 class VillageWidget {
-    view;
     svg;
     village;
     positions = [
@@ -155,8 +230,7 @@ class VillageWidget {
         [25, 19],
     ];
     dots = 0;
-    constructor(view, svg, village) {
-        this.view = view;
+    constructor(svg, village) {
         this.svg = svg;
         this.village = village;
         this.refresh();
@@ -203,5 +277,13 @@ document.addEventListener('keydown', (event) => {
 controller.bind('step', 'click', controller.step);
 // ---------------------------- Library functions ----------------------------
 function randRange(a, b) {
-    return Math.floor(Math.random() * (b - a));
+    return Math.floor(a + Math.random() * (b - a));
+}
+function randElement(array) {
+    return array[randRange(0, array.length)];
+}
+function addH3(e, text) {
+    const ch = document.createElement('h3');
+    ch.innerText = text;
+    e.appendChild(ch);
 }

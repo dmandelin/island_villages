@@ -10,14 +10,53 @@
 
 class Island {
     readonly tiles: Tile[][];
-    readonly village: Village;
+    readonly villages: Village[] = [];
     protected year_: number = 1;
 
     get year(): number { return this.year_; }
 
+    tile(x: number, y: number): Tile|undefined {
+        const col = this.tiles[x];
+        return col ? col[y] : undefined;
+    }
+
     step() {
-        this.village.step();
+        const villages = [...this.villages];
+        for (const village of villages) {
+            village.step();
+        }
         ++this.year_;
+    }
+
+    protected readonly moveOffsets = [
+        [-2, 0], [-1, -1], [-1, 0], [-1, 1],
+        [0, -2], [0, -1], [0, 1], [0, 2],
+        [1, -1], [1, 0], [1, 1], [2, 0],
+    ];
+
+    addVillage(x: number, y: number, pop: number) {
+        const village = new Village(x, y, pop);
+        this.villages.push(village);
+        this.tiles[x][y].addVillage(village);
+    }
+
+    addVillageFrom(village: Village, newPop: number) {
+        // Find all sites available within 1.5 tiles.
+        const cands: [number, number][] = []
+        for (const [dx, dy] of this.moveOffsets) {
+            const x = village.x + dx;
+            const y = village.y + dy;
+            const tile = this.tile(x, y);
+            if (tile && !tile.isWater && !tile.village) {
+                cands.push([x, y]);
+            }
+        }
+
+        // Choose at random.
+        const pos = randElement(cands);
+        if (pos) {
+            this.addVillage(pos[0], pos[1], newPop);
+        }
     }
 
     constructor(readonly w: number, readonly h: number) {
@@ -36,9 +75,9 @@ class Island {
             const y = randRange(0, h);
             if (this.tiles[x][y].isWater) continue;
             if (this.tiles[x-1][y]?.isWater || this.tiles[x+1][y]?.isWater || 
-                this.tiles[x][y-1]?.isWater || this.tiles[x][y+1]?.isWater) {
-                this.village = new Village(x, y, 100);
-                this.tiles[x][y].addVillage(this.village);
+                this.tiles[x][y-1]?.isWater || this.tiles[x][y+1]?.isWater) 
+            {
+                this.addVillage(x, y, randRange(89, 127));
                 break;
             }
         }
@@ -79,6 +118,24 @@ class Village {
     }
 
     step() {
+        this.trySplit();
+        this.stepPop();
+    }
+
+    trySplit() {
+        if (this.produce / this.pop < 1.05 && Math.random() < 0.1) {
+            this.split();
+        }
+    }
+
+    split() {
+        const newVillagersFraction = Math.random() * 0.5 + 0.1;
+        const newVillagers = Math.round(newVillagersFraction * this.pop);
+        island.addVillageFrom(this, newVillagers);
+        this.pop -= newVillagers;
+    }
+
+    stepPop() {
         const popChange = this.popChange;
         this.pop += popChange;
         this.lastPopChange_ = popChange;
@@ -93,9 +150,19 @@ class View {
     
     readonly panel: HTMLElement;
     readonly widgets: Widget[];
+    readonly villageWidgets: VillageWidget[] = []; 
 
     refresh() {
         for (const w of this.widgets) {
+            w.refresh();
+        }
+
+        if (this.villageWidgets.length < island.villages.length) {
+            for (let i = this.villageWidgets.length; i < island.villages.length; ++i) {
+                this.villageWidgets.push(new VillageWidget(this.svg, island.villages[i]));
+            }
+        }
+        for (const w of this.villageWidgets) {
             w.refresh();
         }
     }
@@ -103,9 +170,8 @@ class View {
     constructor() {
         this.panel = document.getElementById('panel')!;
         this.widgets = [
-            new TextWidget(this, 'Year', () => island.year, ' '),
-            new TextWidget(this, 'Population', () => island.village.pop),
-            new TextWidget(this, 'Produce', () => island.village.produce),
+            new TextWidget(this.panel, 'Year', () => island.year, ' '),
+            new VillageListWidget(this.panel),
         ];
 
         this.svg = document.getElementById('map')!;
@@ -129,7 +195,7 @@ class View {
             });
         });
 
-        this.widgets.push(new VillageWidget(this, this.svg, island.village));
+        this.refresh();
     }
 }
 
@@ -137,17 +203,44 @@ interface Widget {
     refresh();
 }
 
+class VillageListWidget {
+    protected widgets: Widget[] = [];
+    protected length: number = 0;
+
+    constructor(protected readonly panel: HTMLElement) {
+        this.refresh();
+    }
+
+    refresh() {
+        for (let i = this.length; i < island.villages.length; ++i) {
+            const village = island.villages[i];
+            addH3(this.panel, `Village ${i+1}`)
+            this.widgets.push(
+                new TextWidget(this.panel, 'Population', () => village.pop),
+                new TextWidget(this.panel, 'Produce', () => Math.floor(village.produce)),
+                new TextWidget(this.panel, 'Ratio', () => (
+                    village.produce / village.pop).toFixed(2)),
+            );  
+            ++this.length;
+        }
+
+        for (const widget of this.widgets) {
+            widget.refresh();
+        }
+    }
+}
+
 class TextWidget {
     readonly div: HTMLDivElement;
 
-    constructor(protected readonly view, 
+    constructor(protected readonly panel: HTMLElement, 
         protected readonly label: string, 
         protected readonly supplier: () => number|string,
         protected readonly sep = ': ') 
     {
         this.div = document.createElement('div');
         this.refresh();
-        view.panel.appendChild(this.div);
+        panel.appendChild(this.div);
     }
 
     refresh() {
@@ -168,7 +261,10 @@ class VillageWidget {
 
     dots: number = 0;
 
-    constructor(protected readonly view, protected readonly svg, protected readonly village: Village) {
+    constructor(
+        protected readonly svg: HTMLElement, 
+        protected readonly village: Village) 
+    {
         this.refresh();
     }
 
@@ -222,7 +318,16 @@ controller.bind('step', 'click', controller.step)
 
 // ---------------------------- Library functions ----------------------------
 
-function randRange(a: number, b: number) {
-    return Math.floor(Math.random() * (b - a))
+function randRange(a: number, b: number): number {
+    return Math.floor(a + Math.random() * (b - a))
 }
 
+function randElement<T>(array: T[]): T {
+    return array[randRange(0, array.length)]
+}
+
+function addH3(e: HTMLElement, text: string) {
+    const ch = document.createElement('h3');
+    ch.innerText = text;
+    e.appendChild(ch);
+}
