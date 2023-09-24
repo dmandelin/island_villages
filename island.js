@@ -37,7 +37,7 @@ class Island {
                 continue;
             if (this.tiles[x - 1][y]?.isWater || this.tiles[x + 1][y]?.isWater ||
                 this.tiles[x][y - 1]?.isWater || this.tiles[x][y + 1]?.isWater) {
-                this.village = new Village(100);
+                this.village = new Village(x, y, 100);
                 this.tiles[x][y].addVillage(this.village);
                 break;
             }
@@ -56,9 +56,13 @@ class Tile {
     get village() { return this.village_; }
 }
 class Village {
+    x;
+    y;
     pop_;
     lastPopChange_ = 0;
-    constructor(pop_) {
+    constructor(x, y, pop_) {
+        this.x = x;
+        this.y = y;
         this.pop_ = pop_;
     }
     get pop() { return this.pop_; }
@@ -80,6 +84,7 @@ class Village {
     }
 }
 const svgNamespace = "http://www.w3.org/2000/svg";
+const tileSize = 50;
 class View {
     svg;
     panel;
@@ -97,7 +102,6 @@ class View {
             new TextWidget(this, 'Produce', () => island.village.produce),
         ];
         this.svg = document.getElementById('map');
-        const tileSize = 50;
         const borderSize = 1;
         let village = undefined;
         island.tiles.forEach((col, x) => {
@@ -113,23 +117,9 @@ class View {
                 rect.setAttribute('stroke', 'lightgray');
                 rect.setAttribute('stroke-width', String(borderSize));
                 this.svg.appendChild(rect);
-                if (tile.village) {
-                    village = tile.village;
-                    this.addVillageDot(rx + 23, ry + 23);
-                    this.addVillageDot(rx + 21, ry + 27);
-                    this.addVillageDot(rx + 25, ry + 27);
-                }
             });
         });
-    }
-    addVillageDot(x, y) {
-        const rect = document.createElementNS(svgNamespace, 'rect');
-        rect.setAttribute('x', String(x));
-        rect.setAttribute('y', String(y));
-        rect.setAttribute('width', '3');
-        rect.setAttribute('height', '3');
-        rect.setAttribute('fill', '#080808');
-        this.svg.appendChild(rect);
+        this.widgets.push(new VillageWidget(this, this.svg, island.village));
     }
 }
 class TextWidget {
@@ -149,6 +139,46 @@ class TextWidget {
     }
     refresh() {
         this.div.innerText = `${this.label}${this.sep}${this.supplier()}`;
+    }
+}
+class VillageWidget {
+    view;
+    svg;
+    village;
+    positions = [
+        [23, 23],
+        [21, 27],
+        [25, 27],
+        [19, 23],
+        [27, 23],
+        [21, 19],
+        [25, 19],
+    ];
+    dots = 0;
+    constructor(view, svg, village) {
+        this.view = view;
+        this.svg = svg;
+        this.village = village;
+        this.refresh();
+    }
+    refresh() {
+        const newDots = Math.max(1, Math.round(this.village.pop / 50));
+        if (newDots === this.dots)
+            return;
+        for (let i = this.dots; i < newDots; ++i) {
+            const [rx, ry] = this.positions[i];
+            this.addVillageDot(this.village.x * tileSize + rx, this.village.y * tileSize + ry);
+        }
+        this.dots = newDots;
+    }
+    addVillageDot(x, y) {
+        const rect = document.createElementNS(svgNamespace, 'rect');
+        rect.setAttribute('x', String(x));
+        rect.setAttribute('y', String(y));
+        rect.setAttribute('width', '3');
+        rect.setAttribute('height', '3');
+        rect.setAttribute('fill', '#080808');
+        this.svg.appendChild(rect);
     }
 }
 class Controller {
