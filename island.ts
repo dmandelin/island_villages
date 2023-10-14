@@ -23,6 +23,14 @@ class Island {
 
     get year(): number { return this.year_; }
 
+    get pop() {
+        return sum(this.villages.map(v => v.pop));
+    }
+
+    get lastPopChange() {
+        return sum(this.villages.map(v => v.lastPopChange));
+    }
+
     tile(x: number, y: number): Tile|undefined {
         const col = this.tiles[x];
         return col ? col[y] : undefined;
@@ -183,6 +191,7 @@ class View {
         this.panel = document.getElementById('panel')!;
         this.widgets = [
             new TextWidget(this.panel, 'Year', () => island.year, ' '),
+            new TextWidget(this.panel, 'Population', () => `${island.pop} (${island.lastPopChange})`),
             new VillageListWidget(this.panel),
         ];
 
@@ -226,10 +235,12 @@ class VillageListWidget {
     refresh() {
         for (let i = this.length; i < island.villages.length; ++i) {
             const village = island.villages[i];
-            addH3(this.panel, village.name)
+            addH3(this.panel, village.name, 'village-name');
             this.widgets.push(
                 new TextWidget(this.panel, 'Population', 
-                    () => `${village.pop} (${withSign(village.lastPopChange)})`),
+                    () => `${village.pop} (${withSign(village.lastPopChange)})`,
+                    ': ',
+                    'village-data'),
             );      
             ++this.length;
         }
@@ -246,9 +257,11 @@ class TextWidget {
     constructor(protected readonly panel: HTMLElement, 
         protected readonly label: string, 
         protected readonly supplier: () => number|string,
-        protected readonly sep = ': ') 
+        protected readonly sep = ': ',
+        className: string = '') 
     {
         this.div = document.createElement('div');
+        this.div.className = className;
         this.refresh();
         panel.appendChild(this.div);
     }
@@ -367,6 +380,12 @@ controller.bind('pause', 'click', controller.stop)
 
 // ---------------------------- Library functions ----------------------------
 
+function sum(ns: readonly number[]): number {
+    let s = 0;
+    for (const n of ns) s += n;
+    return s;
+}
+
 function randRange(a: number, b: number): number {
     return Math.floor(a + Math.random() * (b - a))
 }
@@ -393,8 +412,9 @@ function withSign(n: number): string {
     return (n < 0 ? "" : "+") + n;
 }
 
-function addH3(e: HTMLElement, text: string) {
+function addH3(e: HTMLElement, text: string, className: string) {
     const ch = document.createElement('h3');
     ch.innerText = text;
+    ch.className = className;
     e.appendChild(ch);
 }

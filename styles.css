@@ -56,3 +56,11 @@ button {
 button:hover {
     background-color: #e4e4e4;
 }
+
+h3.village-name {
+    margin-bottom: 0;
+}
+
+.village-data {
+    margin-left: 2ex;
+}

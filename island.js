@@ -21,6 +21,12 @@ class Island {
     villages = [];
     year_ = 1;
     get year() { return this.year_; }
+    get pop() {
+        return sum(this.villages.map(v => v.pop));
+    }
+    get lastPopChange() {
+        return sum(this.villages.map(v => v.lastPopChange));
+    }
     tile(x, y) {
         const col = this.tiles[x];
         return col ? col[y] : undefined;
@@ -167,6 +173,7 @@ class View {
         this.panel = document.getElementById('panel');
         this.widgets = [
             new TextWidget(this.panel, 'Year', () => island.year, ' '),
+            new TextWidget(this.panel, 'Population', () => `${island.pop} (${island.lastPopChange})`),
             new VillageListWidget(this.panel),
         ];
         this.svg = document.getElementById('map');
@@ -201,8 +208,8 @@ class VillageListWidget {
     refresh() {
         for (let i = this.length; i < island.villages.length; ++i) {
             const village = island.villages[i];
-            addH3(this.panel, village.name);
-            this.widgets.push(new TextWidget(this.panel, 'Population', () => `${village.pop} (${withSign(village.lastPopChange)})`));
+            addH3(this.panel, village.name, 'village-name');
+            this.widgets.push(new TextWidget(this.panel, 'Population', () => `${village.pop} (${withSign(village.lastPopChange)})`, ': ', 'village-data'));
             ++this.length;
         }
         for (const widget of this.widgets) {
@@ -216,12 +223,13 @@ class TextWidget {
     supplier;
     sep;
     div;
-    constructor(panel, label, supplier, sep = ': ') {
+    constructor(panel, label, supplier, sep = ': ', className = '') {
         this.panel = panel;
         this.label = label;
         this.supplier = supplier;
         this.sep = sep;
         this.div = document.createElement('div');
+        this.div.className = className;
         this.refresh();
         panel.appendChild(this.div);
     }
@@ -320,6 +328,12 @@ controller.bind('step', 'click', controller.step);
 controller.bind('play', 'click', controller.run);
 controller.bind('pause', 'click', controller.stop);
 // ---------------------------- Library functions ----------------------------
+function sum(ns) {
+    let s = 0;
+    for (const n of ns)
+        s += n;
+    return s;
+}
 function randRange(a, b) {
     return Math.floor(a + Math.random() * (b - a));
 }
@@ -340,8 +354,9 @@ function poisson(lambda) {
 function withSign(n) {
     return (n < 0 ? "" : "+") + n;
 }
-function addH3(e, text) {
+function addH3(e, text, className) {
     const ch = document.createElement('h3');
     ch.innerText = text;
+    ch.className = className;
     e.appendChild(ch);
 }
