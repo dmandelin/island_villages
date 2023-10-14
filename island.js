@@ -92,6 +92,8 @@ class Village {
     x;
     y;
     pop_;
+    growthConstant = 10;
+    capacity = 300;
     lastPopChange_ = 0;
     constructor(x, y, pop_) {
         this.x = x;
@@ -100,22 +102,13 @@ class Village {
     }
     get pop() { return this.pop_; }
     set pop(pop) { this.pop_ = pop; }
-    get produce() {
-        return 1 * Math.min(this.pop, 300) +
-            0.1 * Math.min(this.pop, 200) +
-            0.1 * Math.min(this.pop, 100);
-    }
-    get popChange() {
-        const sr = this.produce / this.pop;
-        const r = 0.1 * (sr - 1);
-        return Math.round(r * this.pop);
-    }
+    get lastPopChange() { return this.lastPopChange_; }
     step() {
         this.trySplit();
         this.stepPop();
     }
     trySplit() {
-        if (this.produce / this.pop < 1.05 && Math.random() < 0.1) {
+        if (this.capacity / this.pop < 1.05 && Math.random() < 0.1) {
             this.split();
         }
     }
@@ -126,9 +119,13 @@ class Village {
         this.pop -= newVillagers;
     }
     stepPop() {
-        const popChange = this.popChange;
+        const popChange = poisson(this.nextPopChange);
         this.pop += popChange;
         this.lastPopChange_ = popChange;
+    }
+    get nextPopChange() {
+        const r = this.pop / this.capacity;
+        return this.growthConstant * r * (1 - r);
     }
 }
 const svgNamespace = "http://www.w3.org/2000/svg";
@@ -190,7 +187,7 @@ class VillageListWidget {
         for (let i = this.length; i < island.villages.length; ++i) {
             const village = island.villages[i];
             addH3(this.panel, `Village ${i + 1}`);
-            this.widgets.push(new TextWidget(this.panel, 'Population', () => village.pop), new TextWidget(this.panel, 'Produce', () => Math.floor(village.produce)), new TextWidget(this.panel, 'Ratio', () => (village.produce / village.pop).toFixed(2)));
+            this.widgets.push(new TextWidget(this.panel, 'Population', () => `${village.pop} (${withSign(village.lastPopChange)})`));
             ++this.length;
         }
         for (const widget of this.widgets) {
@@ -281,6 +278,20 @@ function randRange(a, b) {
 }
 function randElement(array) {
     return array[randRange(0, array.length)];
+}
+function poisson(lambda) {
+    let L = Math.exp(-lambda);
+    let k = 0;
+    let p = 1;
+    do {
+        k += 1;
+        let u = Math.random();
+        p *= u;
+    } while (p > L);
+    return k - 1;
+}
+function withSign(n) {
+    return (n < 0 ? "" : "+") + n;
 }
 function addH3(e, text) {
     const ch = document.createElement('h3');

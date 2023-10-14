@@ -97,6 +97,8 @@ class Tile {
 }
 
 class Village {
+    protected readonly growthConstant = 10;
+    protected readonly capacity = 300;
     protected lastPopChange_: number = 0;
 
     constructor(readonly x: number,  readonly y: number, protected pop_: number) {
@@ -105,17 +107,7 @@ class Village {
     get pop() { return this.pop_; }
     protected set pop(pop: number) { this.pop_ = pop; }
 
-    get produce(): number {
-        return 1 * Math.min(this.pop, 300) +
-            0.1 * Math.min(this.pop, 200) +
-            0.1 * Math.min(this.pop, 100);
-    }
-
-    get popChange() { 
-        const sr = this.produce / this.pop;
-        const r = 0.1 * (sr - 1);
-        return Math.round(r * this.pop);
-    }
+    get lastPopChange() { return this.lastPopChange_; }
 
     step() {
         this.trySplit();
@@ -123,7 +115,7 @@ class Village {
     }
 
     trySplit() {
-        if (this.produce / this.pop < 1.05 && Math.random() < 0.1) {
+        if (this.capacity / this.pop < 1.05 && Math.random() < 0.1) {
             this.split();
         }
     }
@@ -136,9 +128,14 @@ class Village {
     }
 
     stepPop() {
-        const popChange = this.popChange;
+        const popChange = poisson(this.nextPopChange);
         this.pop += popChange;
         this.lastPopChange_ = popChange;
+    }
+
+    get nextPopChange() {
+        const r = this.pop / this.capacity;
+        return this.growthConstant * r * (1 - r);
     }
 }
 
@@ -216,11 +213,9 @@ class VillageListWidget {
             const village = island.villages[i];
             addH3(this.panel, `Village ${i+1}`)
             this.widgets.push(
-                new TextWidget(this.panel, 'Population', () => village.pop),
-                new TextWidget(this.panel, 'Produce', () => Math.floor(village.produce)),
-                new TextWidget(this.panel, 'Ratio', () => (
-                    village.produce / village.pop).toFixed(2)),
-            );  
+                new TextWidget(this.panel, 'Population', 
+                    () => `${village.pop} (${withSign(village.lastPopChange)})`),
+            );      
             ++this.length;
         }
 
@@ -324,6 +319,24 @@ function randRange(a: number, b: number): number {
 
 function randElement<T>(array: T[]): T {
     return array[randRange(0, array.length)]
+}
+
+function poisson(lambda: number): number {
+    let L = Math.exp(-lambda);
+    let k = 0;
+    let p = 1;
+
+    do {
+        k += 1;
+        let u = Math.random();
+        p *= u;
+    } while (p > L);
+
+    return k - 1;
+}
+
+function withSign(n: number): string {
+    return (n < 0 ? "" : "+") + n;
 }
 
 function addH3(e: HTMLElement, text: string) {
