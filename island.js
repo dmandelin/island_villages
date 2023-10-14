@@ -7,6 +7,13 @@
 // Later
 // - Fishing villages
 // - Trade and exchange between fishing and farming villages
+const VILLAGE_NAMES = [
+    'Moku',
+    'Kumu',
+    'Kahiko',
+    'Hikina',
+    'Ho\'kahi',
+];
 class Island {
     w;
     h;
@@ -30,8 +37,14 @@ class Island {
         [0, -2], [0, -1], [0, 1], [0, 2],
         [1, -1], [1, 0], [1, 1], [2, 0],
     ];
+    generateVillageName() {
+        if (VILLAGE_NAMES.length) {
+            return VILLAGE_NAMES.shift();
+        }
+        return `Village ${this.villages.length + 1}`;
+    }
     addVillage(x, y, pop) {
-        const village = new Village(x, y, pop);
+        const village = new Village(this.generateVillageName(), x, y, pop);
         this.villages.push(village);
         this.tiles[x][y].addVillage(village);
     }
@@ -89,13 +102,15 @@ class Tile {
     get village() { return this.village_; }
 }
 class Village {
+    name;
     x;
     y;
     pop_;
     growthConstant = 10;
     capacity = 300;
     lastPopChange_ = 0;
-    constructor(x, y, pop_) {
+    constructor(name, x, y, pop_) {
+        this.name = name;
         this.x = x;
         this.y = y;
         this.pop_ = pop_;
@@ -186,7 +201,7 @@ class VillageListWidget {
     refresh() {
         for (let i = this.length; i < island.villages.length; ++i) {
             const village = island.villages[i];
-            addH3(this.panel, `Village ${i + 1}`);
+            addH3(this.panel, village.name);
             this.widgets.push(new TextWidget(this.panel, 'Population', () => `${village.pop} (${withSign(village.lastPopChange)})`));
             ++this.length;
         }
@@ -256,7 +271,7 @@ class Controller {
     bind(elementId, event, fn) {
         document.getElementById(elementId)?.addEventListener(event, fn.bind(this));
     }
-    tickDuration = 1000;
+    tickDuration = 100;
     running = false;
     tLast = 0;
     boundTick = this.tick.bind(this);

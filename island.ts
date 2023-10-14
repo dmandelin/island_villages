@@ -8,6 +8,14 @@
 // - Fishing villages
 // - Trade and exchange between fishing and farming villages
 
+const VILLAGE_NAMES = [
+    'Moku',
+    'Kumu',
+    'Kahiko',
+    'Hikina',
+    'Ho\'kahi',
+];
+
 class Island {
     readonly tiles: Tile[][];
     readonly villages: Village[] = [];
@@ -34,8 +42,15 @@ class Island {
         [1, -1], [1, 0], [1, 1], [2, 0],
     ];
 
+    generateVillageName() {
+        if (VILLAGE_NAMES.length) {
+            return VILLAGE_NAMES.shift();
+        }
+        return `Village ${this.villages.length + 1}`;
+    }
+
     addVillage(x: number, y: number, pop: number) {
-        const village = new Village(x, y, pop);
+        const village = new Village(this.generateVillageName(), x, y, pop);
         this.villages.push(village);
         this.tiles[x][y].addVillage(village);
     }
@@ -101,7 +116,7 @@ class Village {
     protected readonly capacity = 300;
     protected lastPopChange_: number = 0;
 
-    constructor(readonly x: number, readonly y: number, protected pop_: number) {
+    constructor(readonly name: string, readonly x: number, readonly y: number, protected pop_: number) {
     }
 
     get pop() { return this.pop_; }
@@ -211,7 +226,7 @@ class VillageListWidget {
     refresh() {
         for (let i = this.length; i < island.villages.length; ++i) {
             const village = island.villages[i];
-            addH3(this.panel, `Village ${i+1}`)
+            addH3(this.panel, village.name)
             this.widgets.push(
                 new TextWidget(this.panel, 'Population', 
                     () => `${village.pop} (${withSign(village.lastPopChange)})`),
@@ -290,7 +305,7 @@ class Controller {
         document.getElementById(elementId)?.addEventListener(event, fn.bind(this));
     }
 
-    protected tickDuration = 1000;
+    protected tickDuration = 100;
 
     protected running = false;
     protected tLast = 0;
