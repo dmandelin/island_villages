@@ -130,9 +130,12 @@ class Village {
         this.stepPop();
     }
     trySplit() {
-        if (this.capacity / this.pop < 1.05 && Math.random() < 0.1) {
+        if (this.crowded() && Math.random() < 0.1) {
             this.split();
         }
+    }
+    crowded() {
+        return this.capacity / this.pop < 1.05;
     }
     split() {
         const newVillagersFraction = Math.random() * 0.5 + 0.1;
@@ -210,12 +213,16 @@ class VillageListWidget {
         for (let i = this.length; i < island.villages.length; ++i) {
             const village = island.villages[i];
             addH3(this.panel, village.name, 'village-name');
-            this.widgets.push(new TextWidget(this.panel, 'Population', () => `${village.pop} (${withSign(village.lastPopChange)})`, ': ', 'village-data'));
+            this.widgets.push(new TextWidget(this.panel, 'Population', () => this.popText(village), ': ', 'village-data'));
             ++this.length;
         }
         for (const widget of this.widgets) {
             widget.refresh();
         }
+    }
+    popText(v) {
+        const crowded = v.crowded() ? ' | full' : '';
+        return `${v.pop} (${withSign(v.lastPopChange)}${crowded})`;
     }
 }
 class TextWidget {

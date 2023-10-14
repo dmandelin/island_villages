@@ -139,9 +139,13 @@ class Village {
     }
 
     trySplit() {
-        if (this.capacity / this.pop < 1.05 && Math.random() < 0.1) {
+        if (this.crowded() && Math.random() < 0.1) {
             this.split();
         }
+    }
+
+    crowded() {
+        return this.capacity / this.pop < 1.05;
     }
 
     split() {
@@ -239,7 +243,7 @@ class VillageListWidget {
             addH3(this.panel, village.name, 'village-name');
             this.widgets.push(
                 new TextWidget(this.panel, 'Population', 
-                    () => `${village.pop} (${withSign(village.lastPopChange)})`,
+                    () => this.popText(village),
                     ': ',
                     'village-data'),
             );      
@@ -249,6 +253,11 @@ class VillageListWidget {
         for (const widget of this.widgets) {
             widget.refresh();
         }
+    }
+
+    popText(v: Village) {
+        const crowded = v.crowded() ? ' | full' : '';
+        return `${v.pop} (${withSign(v.lastPopChange)}${crowded})`
     }
 }
 
