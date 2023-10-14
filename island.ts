@@ -129,6 +129,7 @@ class Village {
 
     get pop() { return this.pop_; }
     protected set pop(pop: number) { this.pop_ = pop; }
+    setPop(pop: number) { this.pop = pop; }
 
     get lastPopChange() { return this.lastPopChange_; }
 
@@ -358,6 +359,15 @@ class Controller {
 
     stop() {
         this.running = false;
+    }
+
+    runTo1000() {
+        island.villages[0].setPop(100);
+        while (island.pop < 1000 && island.year < 1000) {
+            island.step();
+        }
+        view.refresh();
+        console.log(`Population ${island.pop} reached in year ${island.year}`);
     }
 }
 
