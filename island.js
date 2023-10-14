@@ -249,8 +249,9 @@ class VillageWidget {
         textElement.textContent = village.name;
         textElement.setAttribute('font-family', 'Macondo Swash Caps, cursive');
         textElement.setAttribute('font-weight', 'bold');
-        textElement.setAttribute('x', String(this.village.x * tileSize + 32));
-        textElement.setAttribute('y', String(this.village.y * tileSize + 42));
+        textElement.setAttribute('font-size', '12px');
+        textElement.setAttribute('x', String(this.village.x * tileSize + 8));
+        textElement.setAttribute('y', String(this.village.y * tileSize + 14));
         svg.appendChild(textElement);
         this.refresh();
     }
