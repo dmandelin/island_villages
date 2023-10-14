@@ -275,6 +275,14 @@ class VillageWidget {
         protected readonly svg: HTMLElement, 
         protected readonly village: Village) 
     {
+        const textElement = document.createElementNS(svgNamespace, 'text') as SVGTextElement;
+        textElement.textContent = village.name;
+        textElement.setAttribute('font-family', 'Macondo Swash Caps, cursive');
+        textElement.setAttribute('font-weight', 'bold');
+        textElement.setAttribute('x', String(this.village.x * tileSize + 32));
+        textElement.setAttribute('y', String(this.village.y * tileSize + 42));
+        svg.appendChild(textElement);
+    
         this.refresh();
     }
 
