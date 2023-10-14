@@ -101,7 +101,7 @@ class Village {
     protected readonly capacity = 300;
     protected lastPopChange_: number = 0;
 
-    constructor(readonly x: number,  readonly y: number, protected pop_: number) {
+    constructor(readonly x: number, readonly y: number, protected pop_: number) {
     }
 
     get pop() { return this.pop_; }
@@ -287,12 +287,40 @@ class VillageWidget {
 
 class Controller {
     bind(elementId:string, event: string, fn: () => void) {
-        document.getElementById(elementId)?.addEventListener(event, fn);
+        document.getElementById(elementId)?.addEventListener(event, fn.bind(this));
     }
+
+    protected tickDuration = 1000;
+
+    protected running = false;
+    protected tLast = 0;
+    protected boundTick = this.tick.bind(this);
 
     step() {
         island.step();
         view.refresh();
+    }
+
+    run() {
+        this.tLast = performance.now();
+        this.running = true;
+        this.tick();
+    }
+
+    tick() {
+        if (!this.running) return;
+
+        const tNow = performance.now();
+        while (tNow - this.tLast >= this.tickDuration) {
+            this.tLast += this.tickDuration;
+            this.step();
+        }
+
+        requestAnimationFrame(this.boundTick);
+    }
+
+    stop() {
+        this.running = false;
     }
 }
 
@@ -310,6 +338,8 @@ document.addEventListener('keydown', (event) => {
 });
 
 controller.bind('step', 'click', controller.step)
+controller.bind('play', 'click', controller.run)
+controller.bind('pause', 'click', controller.stop)
 
 // ---------------------------- Library functions ----------------------------
 

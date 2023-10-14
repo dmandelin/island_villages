@@ -254,11 +254,33 @@ class VillageWidget {
 }
 class Controller {
     bind(elementId, event, fn) {
-        document.getElementById(elementId)?.addEventListener(event, fn);
+        document.getElementById(elementId)?.addEventListener(event, fn.bind(this));
     }
+    tickDuration = 1000;
+    running = false;
+    tLast = 0;
+    boundTick = this.tick.bind(this);
     step() {
         island.step();
         view.refresh();
+    }
+    run() {
+        this.tLast = performance.now();
+        this.running = true;
+        this.tick();
+    }
+    tick() {
+        if (!this.running)
+            return;
+        const tNow = performance.now();
+        while (tNow - this.tLast >= this.tickDuration) {
+            this.tLast += this.tickDuration;
+            this.step();
+        }
+        requestAnimationFrame(this.boundTick);
+    }
+    stop() {
+        this.running = false;
     }
 }
 // ---------------------------------- Setup ----------------------------------
@@ -272,6 +294,8 @@ document.addEventListener('keydown', (event) => {
     }
 });
 controller.bind('step', 'click', controller.step);
+controller.bind('play', 'click', controller.run);
+controller.bind('pause', 'click', controller.stop);
 // ---------------------------- Library functions ----------------------------
 function randRange(a, b) {
     return Math.floor(a + Math.random() * (b - a));
