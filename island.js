@@ -7,6 +7,16 @@
 // Later
 // - Fishing villages
 // - Trade and exchange between fishing and farming villages
+// More on splitting
+// - There needs to be some sort of cost to splitting, otherwise growth is maximized
+//   by always splitting.
+// - Ideas:
+//   - More vulnerable to predators and raiding
+//   - Farms not built up yet, need to clear land and condition soil
+//   - Distance from friends, family, potential mates, and ritual sites
+// - At first, we can deal with this as a simple abstraction
+//   - There could be a minimum split size to deal with issues of major isolation
+//   - Some kind of reduced productivity at first seems right, but what?
 const VILLAGE_NAMES = [
     'Moku',
     'Kumu',
@@ -112,7 +122,7 @@ class Village {
     x;
     y;
     pop_;
-    growthConstant = 10;
+    growthConstant = 0.08;
     capacity = 300;
     lastPopChange_ = 0;
     constructor(name, x, y, pop_) {
@@ -150,7 +160,7 @@ class Village {
     }
     get nextPopChange() {
         const r = this.pop / this.capacity;
-        return this.growthConstant * r * (1 - r);
+        return this.growthConstant * r * (1 - r) * this.pop;
     }
 }
 const svgNamespace = "http://www.w3.org/2000/svg";
