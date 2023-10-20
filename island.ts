@@ -18,6 +18,27 @@
 // - At first, we can deal with this as a simple abstraction
 //   - There could be a minimum split size to deal with issues of major isolation
 //   - Some kind of reduced productivity at first seems right, but what?
+//     - In established villages, we have 1-8% growth per year, and we've assumed that
+//       the produce that powers the population growth also powers expanding the farms.
+//     - So, apparently with lots of land available, we can build farms at 8% per year
+//     - Apparently various new settlements had it easier or harder than others
+//       through history, so we have some choices.
+//     - Let's say that population growth is greatly slowed but not stopped during
+//       the buildup. Or not stopped on average.
+//     - In general, the land will have some foraging carrying capacity, which could
+//       be about 1/10 the farming capacity. If in the first year they can build 20%
+//       or so of available farms (basic farms on the best land), then they have about
+//       30% capacity, which is enough to bootstrap a small village. Even linear
+//       buildout of 10% per year means 20%, so small enough splinters could do it
+//     - It also makes sense for them to be some randomness or unknown factor about
+//       getting started, but for now let's assume it's a small island that they
+//       understand pretty well.
+//     - We want a half-full village (0.25*max growth rate) to have a low incentive to
+//       split, but a mostly full village (0.1*max growth rate) to have a good incentive
+//       to split. Perhaps, then, a new village of 100 should have a growth rate about
+//       1/6-1/8 the base rate. Normally it would 2/3. That would mean initial CC
+//       around 120. Or, maybe just make it equal to the starting pop, then grow linearly
+//       to the max over ten years.
 
 const VILLAGE_NAMES = [
     'Moku',
@@ -68,8 +89,8 @@ class Island {
         return `Village ${this.villages.length + 1}`;
     }
 
-    addVillage(x: number, y: number, pop: number) {
-        const village = new Village(this.generateVillageName(), x, y, pop);
+    addVillage(x: number, y: number, cap:number, pop: number) {
+        const village = new Village(this.generateVillageName(), x, y, cap, pop);
         this.villages.push(village);
         this.tiles[x][y].addVillage(village);
     }
@@ -89,7 +110,7 @@ class Island {
         // Choose at random.
         const pos = randElement(cands);
         if (pos) {
-            this.addVillage(pos[0], pos[1], newPop);
+            this.addVillage(pos[0], pos[1], newPop, newPop);
         }
     }
 
@@ -111,7 +132,7 @@ class Island {
             if (this.tiles[x-1][y]?.isWater || this.tiles[x+1][y]?.isWater || 
                 this.tiles[x][y-1]?.isWater || this.tiles[x][y+1]?.isWater) 
             {
-                this.addVillage(x, y, randRange(89, 127));
+                this.addVillage(x, y, 300, randRange(89, 127));
                 break;
             }
         }
@@ -131,22 +152,29 @@ class Tile {
 }
 
 class Village {
+    static readonly maxCap = 300;
+    static readonly fullTenure = 10;
+
     protected readonly growthConstant = 0.08;
-    protected readonly capacity = 300;
     protected lastPopChange_: number = 0;
 
-    constructor(readonly name: string, readonly x: number, readonly y: number, protected pop_: number) {
+    constructor(readonly name: string, readonly x: number, readonly y: number, 
+        protected cap_: number, protected pop_: number) {
     }
 
     get pop() { return this.pop_; }
     protected set pop(pop: number) { this.pop_ = pop; }
     setPop(pop: number) { this.pop = pop; }
 
+    get cap() { return this.cap_; }
+    protected set cap(cap: number) { this.cap_ = cap; }
+
     get lastPopChange() { return this.lastPopChange_; }
 
     step() {
         this.trySplit();
         this.stepPop();
+        this.stepCap();
     }
 
     trySplit() {
@@ -156,7 +184,7 @@ class Village {
     }
 
     crowded() {
-        return this.capacity / this.pop < 1.05;
+        return this.cap / this.pop < 1.05;
     }
 
     split() {
@@ -173,8 +201,14 @@ class Village {
     }
 
     get nextPopChange() {
-        const r = this.pop / this.capacity;
+        const r = this.pop / this.cap;
         return this.growthConstant * r * (1 - r) * this.pop;
+    }
+
+    stepCap() {
+        if (this.cap < Village.maxCap) {
+            this.cap = Math.ceil(this.cap + Village.maxCap / Village.fullTenure);
+        }
     }
 }
 
@@ -268,7 +302,8 @@ class VillageListWidget {
 
     popText(v: Village) {
         const crowded = v.crowded() ? ' | full' : '';
-        return `${v.pop} (${withSign(v.lastPopChange)}${crowded})`
+        const building = v.cap < Village.maxCap ? ` | ${Math.round(100*v.cap/Village.maxCap)}% built` : '';
+        return `${v.pop} (${withSign(v.lastPopChange)}${crowded}${building})`
     }
 }
 
